@@ -49,9 +49,11 @@ async function bringToForeground() {
   try {
     if (IS_WIN) {
       // Windows: ใช้ PowerShell focus window ด้วย AppActivate
+      // หา Edge หรือ Chrome ที่เปิด TradingView อยู่ (มี MainWindowTitle)
       execSync(
-        `powershell -NoProfile -NonInteractive -Command "` +
-        `$proc = Get-Process -Name TradingView -ErrorAction SilentlyContinue | Select-Object -First 1; ` +
+        `powershell -NoProfile -NonInteractive -Command ` +
+        `"$proc = Get-Process -Name msedge,chrome,TradingView -ErrorAction SilentlyContinue ` +
+        `| Where-Object {$_.MainWindowTitle -ne ''} | Select-Object -First 1; ` +
         `if ($proc) { ` +
         `  Add-Type -AssemblyName Microsoft.VisualBasic; ` +
         `  [Microsoft.VisualBasic.Interaction]::AppActivate($proc.Id) ` +
