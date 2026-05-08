@@ -16,6 +16,9 @@ import { evaluate, evaluateAsync, getClient, getTargetInfo } from './src/connect
 import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { platform } from 'os';
+
+const IS_WIN = platform() === 'win32';
 
 const SCREENSHOT_DIR = '/Users/rattanon/tradingview-mcp/screenshots';
 
@@ -44,11 +47,25 @@ async function activateTarget() {
 
 async function bringToForeground() {
   try {
-    execSync(`osascript -e 'tell application "TradingView" to activate'`, { timeout: 3000 });
+    if (IS_WIN) {
+      // Windows: ใช้ PowerShell focus window ด้วย AppActivate
+      execSync(
+        `powershell -NoProfile -NonInteractive -Command "` +
+        `$proc = Get-Process -Name TradingView -ErrorAction SilentlyContinue | Select-Object -First 1; ` +
+        `if ($proc) { ` +
+        `  Add-Type -AssemblyName Microsoft.VisualBasic; ` +
+        `  [Microsoft.VisualBasic.Interaction]::AppActivate($proc.Id) ` +
+        `}"`,
+        { timeout: 5000 }
+      );
+    } else {
+      // macOS: AppleScript
+      execSync(`osascript -e 'tell application "TradingView" to activate'`, { timeout: 3000 });
+    }
     process.stderr.write(`[focus] TradingView activated\n`);
     await new Promise(r => setTimeout(r, 400));  // รอ focus transition
   } catch (e) {
-    process.stderr.write(`[focus] AppleScript failed: ${e.message}\n`);
+    process.stderr.write(`[focus] bringToForeground failed: ${e.message}\n`);
   }
 }
 
